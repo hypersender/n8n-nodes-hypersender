@@ -1,8 +1,8 @@
 # n8n-nodes-hypersender
 
-An [n8n](https://n8n.io) community node for [Hypersender](https://hypersender.com). Send WhatsApp messages from your own number, send SMS from the SIM in your Android phone, and send and verify OTP codes, without writing HTTP requests.
+[n8n](https://n8n.io) community nodes for [Hypersender](https://hypersender.com). Send WhatsApp messages from your own number, send SMS from the SIM in your Android phone, send and verify OTP codes, and start workflows when a message arrives, without writing HTTP requests.
 
-[Installation](#installation) · [Credentials](#credentials) · [Operations](#operations) · [Incoming messages](#incoming-messages) · [Example](#example) · [Resources](#resources)
+[Installation](#installation) · [Credentials](#credentials) · [Operations](#operations) · [Trigger](#trigger) · [Example](#example) · [Resources](#resources)
 
 ## Installation
 
@@ -16,7 +16,7 @@ Create a **Hypersender API** credential for each instance you use:
 
 1. **Instance Type**: WhatsApp or SMS. OTP codes go through a WhatsApp instance.
 2. **Instance ID**: open the instance in the Hypersender dashboard and copy its ID.
-3. **API Key**: create one on the API keys page of the dashboard.
+3. **API Key (Bearer Token)**: the instance's access token. The dashboard shows it once when you create the instance. To get a new one, use **Regenerate Access Token** on the instance; the old token stops working.
 
 n8n tests the credential by making a read-only request to that instance.
 
@@ -52,21 +52,21 @@ For WhatsApp, the **Chat ID** field takes a phone number with its country code (
 
 The node can be used as a tool by n8n's AI Agent.
 
-## Incoming messages
+## Trigger
 
-To start a workflow when a message arrives, use n8n's **Webhook** node:
+The **Hypersender Trigger** starts a workflow when your instance sends an event, such as a new WhatsApp message (`message.any`) or an incoming SMS (`message.phone.received`). The event list matches the instance type in the credential.
 
-1. Add a Webhook node with method `POST`. Under Authentication, choose **Header Auth** and create a credential whose name is `Authorization` and whose value is a long random secret.
-2. In the Hypersender dashboard, add a webhook to your instance with the Webhook node's Production URL, and paste the same secret as its Authorization Secret.
-3. WhatsApp messages arrive as `message.any` events (the text is in `body.data.payload.body`, the sender in `body.data.payload.from`). SMS arrive as `message.phone.received`.
+You don't need to touch the Hypersender dashboard. When you activate the workflow, the node creates a webhook on your instance with the workflow's URL and a random secret. It rejects any request that doesn't carry that secret, and deletes the webhook when you deactivate the workflow. The webhook shows up in the dashboard named `n8n: <workflow name>` and counts toward your plan's webhook limit.
 
-Skip events where `body.data.payload.fromMe` is `true`, or a reply workflow will answer its own messages.
+**Ignore My Own Messages** (on by default) skips WhatsApp messages sent from your own number, so an auto-reply doesn't answer itself.
+
+Hypersender has to reach your n8n, so this needs n8n Cloud or a self-hosted n8n with a public URL. A local n8n on `localhost` won't receive events.
 
 ## Example
 
-A WhatsApp auto-reply: **Webhook** (receives `message.any`) → **If** (`fromMe` is false) → **Hypersender**, WhatsApp Message, Send Text, with Chat ID `{{ $json.body.data.payload.from }}`.
+A WhatsApp auto-reply: **Hypersender Trigger** (event `message.any`) → **Hypersender**, WhatsApp Message, Send Text, with Chat ID `{{ $json.data.payload.from }}`.
 
-A downloadable version of this workflow, and a step-by-step guide, is on the [Hypersender blog](https://hypersender.com/en/blog/n8n-whatsapp).
+The [Hypersender blog](https://hypersender.com/en/blog/n8n-whatsapp) has a step-by-step guide that builds the same workflow with n8n's own nodes.
 
 ## Resources
 
@@ -76,6 +76,7 @@ A downloadable version of this workflow, and a step-by-step guide, is on the [Hy
 
 ## Version history
 
+- 0.2.0: Hypersender Trigger, which creates and deletes its own webhook.
 - 0.1.0: WhatsApp messages and contacts, SMS, and OTP.
 
 ## License

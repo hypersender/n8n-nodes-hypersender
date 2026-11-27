@@ -6,7 +6,7 @@ import type {
 	INodeProperties,
 } from 'n8n-workflow';
 
-// One credential per instance: the API routes every request through an instance, so the key can only be tested together with one.
+// One credential per instance: each Hypersender access token belongs to one instance.
 export class HypersenderApi implements ICredentialType {
 	name = 'hypersenderApi';
 
@@ -37,13 +37,13 @@ export class HypersenderApi implements ICredentialType {
 			description: "From the instance's page in the Hypersender dashboard",
 		},
 		{
-			displayName: 'API Key',
+			displayName: 'API Key (Bearer Token)',
 			name: 'apiKey',
 			type: 'string',
 			typeOptions: { password: true },
 			default: '',
 			required: true,
-			description: 'From the API keys page in the Hypersender dashboard',
+			description: "The instance's access token. It is shown once when you create the instance; use Regenerate Access Token on the instance to get a new one.",
 		},
 	];
 
