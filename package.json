@@ -1,9 +1,9 @@
 {
   "name": "n8n-nodes-hypersender",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "n8n nodes for Hypersender: send WhatsApp messages from your own number, SMS from your Android phone and OTP codes, and start workflows from WhatsApp and SMS events",
   "license": "MIT",
-  "homepage": "https://hypersender.com",
+  "homepage": "https://github.com/hypersender/n8n-nodes-hypersender",
   "keywords": [
     "n8n-community-node-package",
     "n8n",
@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hypersender/n8n-nodes-hypersender.git"
+    "url": "https://github.com/hypersender/n8n-nodes-hypersender"
   },
   "scripts": {
     "build": "n8n-node build",
@@ -47,7 +47,7 @@
     ]
   },
   "devDependencies": {
-    "@n8n/node-cli": "*",
+    "@n8n/node-cli": "^0.58.8",
     "eslint": "9.32.0",
     "prettier": "3.6.2",
     "release-it": "^21.1.0",
@@ -59,5 +59,8 @@
   "publishConfig": {
     "access": "public",
     "provenance": true
+  },
+  "bugs": {
+    "url": "https://github.com/hypersender/n8n-nodes-hypersender/issues"
   }
 }
