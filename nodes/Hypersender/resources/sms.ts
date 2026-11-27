@@ -3,6 +3,8 @@ import { show } from './shared';
 
 const R = 'sms';
 const smsPath = (endpoint: string) => `=/sms/v1/{{ toPathSegment($credentials.instanceId) }}/${endpoint}`;
+const listOutput = { postReceive: [{ type: 'rootProperty' as const, properties: { property: 'data' } }] };
+const deleted = { postReceive: [{ type: 'set' as const, properties: { value: '={{ { "deleted": true } }}' } }] };
 
 export const smsDescription: INodeProperties[] = [
 	{
@@ -12,7 +14,12 @@ export const smsDescription: INodeProperties[] = [
 		noDataExpression: true,
 		displayOptions: { show: { resource: [R] } },
 		options: [
-			{ name: 'Get Many', value: 'getAll', action: 'Get many SMS messages', description: 'List sent and received messages, newest first', routing: { request: { method: 'GET', url: smsPath('messages') }, output: { postReceive: [{ type: 'rootProperty', properties: { property: 'data' } }] } } },
+			{ name: 'Archive Thread', value: 'archiveThread', action: 'Archive or unarchive thread', routing: { request: { method: 'PUT', url: smsPath('edit-message-thread') } } },
+			{ name: 'Delete', value: 'delete', action: 'Delete SMS message', routing: { request: { method: 'DELETE', url: smsPath('delete-message') }, output: deleted } },
+			{ name: 'Delete Thread', value: 'deleteThread', action: 'Delete thread', description: 'Delete a conversation and its messages', routing: { request: { method: 'DELETE', url: smsPath('delete-message-thread') }, output: deleted } },
+			{ name: 'Get Heartbeats', value: 'heartbeats', action: 'Get phone heartbeats', description: 'Battery, charging and app version reports from the phone, newest first', routing: { request: { method: 'GET', url: smsPath('heartbeats') }, output: listOutput } },
+			{ name: 'Get Many', value: 'getAll', action: 'Get many SMS messages', description: 'List sent and received messages, newest first', routing: { request: { method: 'GET', url: smsPath('messages') }, output: listOutput } },
+			{ name: 'Get Threads', value: 'threads', action: 'Get many threads', description: 'Conversations, newest first', routing: { request: { method: 'GET', url: smsPath('message-threads') }, output: listOutput } },
 			{ name: 'Send', value: 'send', action: 'Send SMS', description: 'Send an SMS from the SIM in your Android phone', routing: { request: { method: 'POST', url: smsPath('send-message') } } },
 		],
 		default: 'send',
@@ -22,10 +29,10 @@ export const smsDescription: INodeProperties[] = [
 		displayName: 'To',
 		name: 'to',
 		type: 'string',
-		default: '',
+		default: "={{ $json.data?.from_phone_number ?? '' }}",
 		required: true,
 		placeholder: 'e.g. +12025550101',
-		description: 'Recipient phone number in international format',
+		description: 'Recipient phone number in international format. After a Hypersender Trigger it defaults to the sender.',
 		displayOptions: show(R, ['send']),
 		routing: { send: { type: 'body', property: 'to' } },
 	},
@@ -55,13 +62,17 @@ export const smsDescription: INodeProperties[] = [
 		],
 	},
 
+	{ displayName: 'Message ID', name: 'messageId', type: 'string', default: "={{ $json.data?.id ?? $json.id ?? '' }}", required: true, displayOptions: show(R, ['delete']), routing: { send: { type: 'query', property: 'messageId' } } },
+	{ displayName: 'Thread ID', name: 'messageThreadId', type: 'string', default: "={{ $json.data?.message_thread_id ?? $json.message_thread_id ?? '' }}", required: true, displayOptions: show(R, ['deleteThread']), routing: { send: { type: 'query', property: 'messageThreadId' } } },
+	{ displayName: 'Thread ID', name: 'messageThreadId', type: 'string', default: "={{ $json.data?.message_thread_id ?? $json.message_thread_id ?? '' }}", required: true, displayOptions: show(R, ['archiveThread']), routing: { send: { type: 'body', property: 'messageThreadId' } } },
+	{ displayName: 'Archived', name: 'isArchived', type: 'boolean', default: true, description: 'Whether to archive the thread. Turn off to unarchive it.', displayOptions: show(R, ['archiveThread']), routing: { send: { type: 'body', property: 'is_archived' } } },
 	{
 		displayName: 'Return All',
 		name: 'returnAll',
 		type: 'boolean',
 		default: false,
 		description: 'Whether to return all results or only up to a given limit',
-		displayOptions: show(R, ['getAll']),
+		displayOptions: show(R, ['getAll', 'threads', 'heartbeats']),
 		routing: {
 			send: { paginate: '={{ $value }}', type: 'query', property: 'per_page', value: '50' },
 			operations: {
@@ -82,7 +93,7 @@ export const smsDescription: INodeProperties[] = [
 		typeOptions: { minValue: 1, maxValue: 50 },
 		default: 50,
 		description: 'Max number of results to return',
-		displayOptions: { show: { resource: [R], operation: ['getAll'], returnAll: [false] } },
+		displayOptions: { show: { resource: [R], operation: ['getAll', 'threads', 'heartbeats'], returnAll: [false] } },
 		routing: { send: { type: 'query', property: 'per_page' }, output: { maxResults: '={{$value}}' } },
 	},
 	{

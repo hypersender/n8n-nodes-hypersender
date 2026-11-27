@@ -2,6 +2,7 @@ import type { INodeProperties } from 'n8n-workflow';
 import { show, toChatId, whatsappPath } from './shared';
 
 const R = 'whatsappContact';
+const contacts = (method: 'GET' | 'POST', endpoint: string) => ({ request: { method, url: whatsappPath(`contacts/${endpoint}`) } });
 
 export const whatsappContactDescription: INodeProperties[] = [
 	{
@@ -11,8 +12,15 @@ export const whatsappContactDescription: INodeProperties[] = [
 		noDataExpression: true,
 		displayOptions: { show: { resource: [R] } },
 		options: [
-			{ name: 'Check Number', value: 'checkExists', action: 'Check if number has account', description: 'Check whether a phone number has a WhatsApp account', routing: { request: { method: 'POST', url: whatsappPath('contacts/check-exists') } } },
-			{ name: 'Get', value: 'get', action: 'Get contact', routing: { request: { method: 'GET', url: whatsappPath('contacts/get') } } },
+			{ name: 'Check Number', value: 'checkExists', action: 'Check if number has account', description: 'Check whether a phone number has a WhatsApp account', routing: contacts('POST', 'check-exists') },
+			{ name: 'Create or Update', value: 'upsert', action: 'Create or update contact', description: 'Create a new record, or update the current one if it already exists (upsert)', routing: contacts('POST', 'upsert') },
+			{ name: 'Get', value: 'get', action: 'Get contact', routing: contacts('GET', 'get') },
+			{ name: 'Get LID by Phone Number', value: 'lidByPhone', action: 'Get LID by phone number', description: 'Find the hidden ID (LID) WhatsApp uses for a phone number', routing: contacts('GET', 'get-lid-by-phone-number') },
+			{ name: 'Get LID Count', value: 'lidCount', action: 'Count known phone number mappings', routing: contacts('GET', 'get-lids-count') },
+			{ name: 'Get Many', value: 'getAll', action: 'Get many contacts', routing: contacts('GET', 'get-all') },
+			{ name: 'Get Many LIDs', value: 'lids', action: 'Get many LID mappings', description: 'Known pairs of LIDs and phone numbers', routing: contacts('GET', 'get-all-known-lids') },
+			{ name: 'Get Phone Number by LID', value: 'phoneByLid', action: 'Get phone number by LID', routing: contacts('GET', 'get-phone-number-by-lid') },
+			{ name: 'Get Profile Picture', value: 'profilePicture', action: 'Get profile picture', description: "Get the URL of a contact's profile picture", routing: contacts('GET', 'profile-picture') },
 		],
 		default: 'checkExists',
 	},
@@ -31,11 +39,46 @@ export const whatsappContactDescription: INodeProperties[] = [
 		displayName: 'Chat ID',
 		name: 'chatId',
 		type: 'string',
+		default: "={{ $json.data?.payload?.from ?? '' }}",
+		required: true,
+		placeholder: 'e.g. 201234567890',
+		description: 'Phone number with country code, or a full chat ID such as 201234567890@c.us. After a Hypersender Trigger it defaults to the sender.',
+		displayOptions: show(R, ['get', 'profilePicture']),
+		routing: { send: { type: 'query', property: 'chat_id', value: toChatId } },
+	},
+	{
+		displayName: 'Chat ID',
+		name: 'chatId',
+		type: 'string',
 		default: '',
 		required: true,
 		placeholder: 'e.g. 201234567890',
-		description: 'Phone number with country code, or a full chat ID such as 201234567890@c.us',
-		displayOptions: show(R, ['get']),
-		routing: { send: { type: 'query', property: 'chat_id', value: toChatId } },
+		description: 'Phone number with country code, or a full chat ID',
+		displayOptions: show(R, ['upsert']),
+		routing: { send: { type: 'body', property: 'chat_id', value: toChatId } },
 	},
+	{ displayName: 'First Name', name: 'firstName', type: 'string', default: '', required: true, displayOptions: show(R, ['upsert']), routing: { send: { type: 'body', property: 'first_name' } } },
+	{ displayName: 'Last Name', name: 'lastName', type: 'string', default: '', displayOptions: show(R, ['upsert']), routing: { send: { type: 'body', property: 'last_name' } } },
+	{
+		displayName: 'Phone Number',
+		name: 'phoneNumber',
+		type: 'string',
+		default: '',
+		required: true,
+		placeholder: 'e.g. 201234567890',
+		displayOptions: show(R, ['lidByPhone']),
+		routing: { send: { type: 'query', property: 'phoneNumber', value: `={{ String($value).replace(/\\D/g, '') }}` } },
+	},
+	{ displayName: 'LID', name: 'lid', type: 'string', default: '', required: true, placeholder: 'e.g. 123456789@lid', displayOptions: show(R, ['phoneByLid']), routing: { send: { type: 'query', property: 'lid' } } },
+	{
+		displayName: 'Limit',
+		name: 'limit',
+		type: 'number',
+		typeOptions: { minValue: 1, maxValue: 1000 },
+		default: 50,
+		description: 'Max number of results to return',
+		displayOptions: show(R, ['getAll', 'lids']),
+		routing: { send: { type: 'query', property: 'limit' } },
+	},
+	{ displayName: 'Offset', name: 'offset', type: 'number', typeOptions: { minValue: 0 }, default: 0, description: 'How many results to skip', displayOptions: show(R, ['getAll', 'lids']), routing: { send: { type: 'query', property: 'offset' } } },
 ];

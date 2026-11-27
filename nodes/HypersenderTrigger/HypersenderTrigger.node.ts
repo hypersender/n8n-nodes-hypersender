@@ -3,6 +3,7 @@ import {
 	NodeConnectionTypes,
 	type IDataObject,
 	type IHookFunctions,
+	type INodeExecutionData,
 	type ILoadOptionsFunctions,
 	type INodePropertyOptions,
 	type INodeType,
@@ -70,7 +71,8 @@ export class HypersenderTrigger implements INodeType {
 		description: 'Starts the workflow when your Hypersender WhatsApp or SMS instance sends an event',
 		defaults: { name: 'Hypersender Trigger' },
 		inputs: [],
-		outputs: [NodeConnectionTypes.Main],
+		// One output per chosen event (like WAHA's trigger), so each event can go down its own branch.
+		outputs: `={{ ($parameter.events?.length ? $parameter.events : ['${NodeConnectionTypes.Main}']).map((event) => ({ type: '${NodeConnectionTypes.Main}', displayName: event })) }}`,
 		credentials: [{ name: 'hypersenderApi', required: true }],
 		webhooks: [{ name: 'default', httpMethod: 'POST', responseMode: 'onReceived', path: 'webhook' }],
 		properties: [
@@ -82,7 +84,7 @@ export class HypersenderTrigger implements INodeType {
 				default: [],
 				required: true,
 				description:
-					'Events that start the workflow. The list depends on whether the credential is a WhatsApp or SMS instance. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
+					'Events that start the workflow. Each event gets its own output. The list depends on whether the credential is a WhatsApp or SMS instance. Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 			},
 			{
 				displayName: 'Ignore My Own Messages',
@@ -163,6 +165,11 @@ export class HypersenderTrigger implements INodeType {
 			if (payload?.fromMe === true) return {};
 		}
 
-		return { workflowData: [this.helpers.returnJsonArray(body)] };
+		const events = this.getNodeParameter('events', []) as string[];
+		const index = events.indexOf(String(body.event));
+		if (index === -1) return {};
+		const workflowData = events.map(() => [] as INodeExecutionData[]);
+		workflowData[index] = this.helpers.returnJsonArray(body);
+		return { workflowData };
 	}
 }
