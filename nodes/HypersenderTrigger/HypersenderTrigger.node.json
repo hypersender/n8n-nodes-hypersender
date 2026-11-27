@@ -8,12 +8,12 @@
 	"resources": {
 		"credentialDocumentation": [
 			{
-				"url": "https://github.com/hypersender/n8n-nodes-hypersender?tab=readme-ov-file#credentials"
+				"url": "https://docs.hypersender.com/v2/packages-and-sdks/n8n/installation"
 			}
 		],
 		"primaryDocumentation": [
 			{
-				"url": "https://docs.hypersender.com"
+				"url": "https://docs.hypersender.com/v2/packages-and-sdks/n8n/trigger"
 			}
 		]
 	}

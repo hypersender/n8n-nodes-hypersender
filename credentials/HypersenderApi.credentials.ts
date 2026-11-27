@@ -14,7 +14,7 @@ export class HypersenderApi implements ICredentialType {
 
 	icon: Icon = { light: 'file:../icons/hypersender.svg', dark: 'file:../icons/hypersender.svg' };
 
-	documentationUrl = 'https://github.com/hypersender/n8n-nodes-hypersender?tab=readme-ov-file#credentials';
+	documentationUrl = 'https://docs.hypersender.com/v2/packages-and-sdks/n8n/installation';
 
 	properties: INodeProperties[] = [
 		{
