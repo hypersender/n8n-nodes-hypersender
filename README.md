@@ -76,8 +76,7 @@ The [Hypersender blog](https://hypersender.com/en/blog/n8n-whatsapp) has a step-
 
 ## Version history
 
-- 0.2.0: Hypersender Trigger, which creates and deletes its own webhook.
-- 0.1.0: WhatsApp messages and contacts, SMS, and OTP.
+- 0.1.0: WhatsApp messages and contacts, SMS, OTP, and the Hypersender Trigger.
 
 ## License
 
