@@ -1,89 +1,52 @@
-# n8n-nodes-hypersender
+<p align="center"><img width="307" height="63" src="https://raw.githubusercontent.com/hypersender/n8n-nodes-hypersender/main/art/hy.svg" alt="Hypersender Logo"></p>
 
-[n8n](https://n8n.io) community nodes for [Hypersender](https://hypersender.com). Send WhatsApp messages from your own number, send SMS from the SIM in your Android phone, send and verify OTP codes, and start workflows when a message arrives, without writing HTTP requests.
+<p align="center">
+<a href="https://www.npmjs.com/package/n8n-nodes-hypersender"><img src="https://img.shields.io/npm/dt/n8n-nodes-hypersender" alt="Total Downloads"></a>
+<a href="https://www.npmjs.com/package/n8n-nodes-hypersender"><img src="https://img.shields.io/npm/v/n8n-nodes-hypersender" alt="Latest Stable Version"></a>
+<a href="https://github.com/hypersender/n8n-nodes-hypersender/blob/main/LICENSE.md"><img src="https://img.shields.io/badge/license-MIT-brightgreen.svg" alt="License"></a>
+</p>
 
-[Installation](#installation) · [Credentials](#credentials) · [Operations](#operations) · [Trigger](#trigger) · [Example](#example) · [Resources](#resources)
+# Introduction
 
-## Installation
+The official [n8n](https://n8n.io) community node for the Hypersender WhatsApp API, SMS API, and OTP API. Send WhatsApp messages from your own number, send SMS from your own Android phone, send and verify OTP codes, and start workflows when a message arrives, without writing HTTP requests.
 
-In n8n, open **Settings → Community Nodes → Install**, enter `n8n-nodes-hypersender`, and confirm. See the [n8n guide to installing community nodes](https://docs.n8n.io/integrations/community-nodes/installation/) for self-hosted setups.
+It adds two nodes:
 
-## Credentials
+- **Hypersender**: every WhatsApp, SMS and OTP action that works with an instance token
+- **Hypersender Trigger**: starts a workflow on WhatsApp or SMS events, and creates and deletes its own webhook
 
-You need a [Hypersender account](https://app.hypersender.com) with a WhatsApp instance connected by QR code, or the Hypersender SMS app installed on an Android phone.
+# Installation
 
-Create a **Hypersender API** credential for each instance you use:
+In n8n, open **Settings → Community Nodes → Install** and enter:
 
-1. **Instance Type**: WhatsApp or SMS. OTP codes go through a WhatsApp instance.
-2. **Instance ID**: open the instance in the Hypersender dashboard and copy its ID.
-3. **API Key (Bearer Token)**: the instance's access token. The dashboard shows it once when you create the instance. To get a new one, use **Regenerate Access Token** on the instance; the old token stops working.
+```
+n8n-nodes-hypersender
+```
 
-n8n tests the credential by making a read-only request to that instance.
+Then create a **Hypersender API** credential with the **Instance Type** (WhatsApp or SMS), the **Instance ID**, and the instance's **API Key (Bearer Token)** from the [Hypersender dashboard](https://app.hypersender.com). Create one credential per instance.
 
-## Operations
+A WhatsApp auto-reply is two nodes: **Hypersender Trigger** (event `message.any`) → **Hypersender** (WhatsApp Message → Send Text). Chat ID already points at the sender, so you only type the reply.
 
-The node covers every endpoint of the Hypersender WhatsApp, SMS and OTP APIs that works with an instance token.
+# Official Documentation
 
-**WhatsApp Message**
+You can find the official documentation at [Hypersender n8n Documentation](https://docs.hypersender.com/v2/packages-and-sdks/n8n/installation).
 
-- Send Text: sends with a typing indicator and a short, human-like delay first
-- Send Image, Send Video, Send File, Send Voice Note: from a public URL
-- Send Link With Custom Preview, Send Location, Send Poll, Send Contact Card
-- React, Mark as Seen, Mark Chat as Read, Star, Forward, Delete
-- Start Typing, Stop Typing
-- Get Request Status: WhatsApp sends are queued. The response has a `queued_request_uuid` you can check here.
+- [Actions](https://docs.hypersender.com/v2/packages-and-sdks/n8n/actions): every operation of the Hypersender node
+- [Trigger](https://docs.hypersender.com/v2/packages-and-sdks/n8n/trigger): events, automatic webhook setup, and the auto-reply example
 
-**WhatsApp Contact**
+## Changelog
 
-- Check Number: whether a phone number has a WhatsApp account
-- Get, Get Many, Get Profile Picture, Create or Update
-- LID lookups: Get LID by Phone Number, Get Phone Number by LID, Get Many LIDs, Get LID Count
+Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
 
-**SMS**
+## Security Vulnerabilities
 
-- Send: from your Android phone, with an optional schedule, retry limit, expiry and your own request ID (retrying with the same ID doesn't send twice)
-- Get Many messages (with filters), Delete
-- Get Threads, Archive Thread, Delete Thread
-- Get Heartbeats: battery, charging and app version reports from the phone
+Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
 
-**OTP**
+## Credits
 
-- Send Code over WhatsApp
-- Verify Code
-- Create Sign-In Link: a link that opens WhatsApp with a prefilled message; the user is verified when they send it
-
-For WhatsApp, the **Chat ID** field takes a phone number with its country code (`201234567890`), which the node turns into `201234567890@c.us`. You can also paste a full chat ID, including group IDs ending in `@g.us`.
-
-**Replying needs no mapping.** After a Hypersender Trigger, Chat ID, Message ID and the SMS To field default to the sender and the message that started the workflow. Add the node, pick Send Text, type the reply.
-
-The node can be used as a tool by n8n's AI Agent.
-
-## Trigger
-
-The **Hypersender Trigger** starts a workflow when your instance sends an event, such as a new WhatsApp message (`message.any`) or an incoming SMS (`message.phone.received`). The event list matches the instance type in the credential. Each event you pick gets its own output, so you can send messages and delivery receipts down different branches without a Switch node.
-
-You don't need to touch the Hypersender dashboard. When you activate the workflow, the node creates a webhook on your instance with the workflow's URL and a random secret. It rejects any request that doesn't carry that secret, and deletes the webhook when you deactivate the workflow. The webhook shows up in the dashboard named `n8n: <workflow name>` and counts toward your plan's webhook limit.
-
-**Ignore My Own Messages** (on by default) skips WhatsApp messages sent from your own number, so an auto-reply doesn't answer itself.
-
-Hypersender has to reach your n8n, so this needs n8n Cloud or a self-hosted n8n with a public URL. A local n8n on `localhost` won't receive events.
-
-## Example
-
-A WhatsApp auto-reply: **Hypersender Trigger** (event `message.any`) → **Hypersender**, WhatsApp Message, Send Text. Chat ID already points at the sender, so you only type the reply text.
-
-The [Hypersender blog](https://hypersender.com/en/blog/n8n-whatsapp) has a step-by-step guide that builds the same workflow with n8n's own nodes.
-
-## Resources
-
-- [Hypersender API documentation](https://docs.hypersender.com)
-- [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
-- Support: [support@hypersender.com](mailto:support@hypersender.com)
-
-## Version history
-
-- 0.1.0: WhatsApp messages and contacts, SMS, OTP, and the Hypersender Trigger.
+-   [Hypersender](https://github.com/hypersender)
+-   [All Contributors](../../contributors)
 
 ## License
 
-[MIT](LICENSE.md)
+The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
